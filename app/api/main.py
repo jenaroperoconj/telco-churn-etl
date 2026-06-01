@@ -1,7 +1,7 @@
 import os
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from app.shared.db import connect, placeholder
 
@@ -32,11 +32,9 @@ def root():
         "status": "ok",
         "endpoints": [
             "/health",
-            "/api/v1/pipeline/start",
-            "/api/v1/pipeline/status",
-            "/api/v1/pipeline/latest",
-            "/api/v1/pipeline/issues",
-            "/api/v1/data/customers/summary",
+            "/upload",
+            "/status",
+            "/result",
         ],
     }
 
@@ -46,10 +44,21 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/api/v1/pipeline/start")
-def start_pipeline_v1():
+@app.post("/upload")
+async def upload_csv(file: UploadFile = File(...)):
+    if not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="El archivo debe ser CSV")
+
+    file_content = await file.read()
+    if not file_content:
+        raise HTTPException(status_code=400, detail="El archivo esta vacio")
+
     try:
-        response = httpx.post(f"{ETL_INTERNAL_URL}/internal/pipeline/start", timeout=10)
+        response = httpx.post(
+            f"{ETL_INTERNAL_URL}/internal/upload",
+            files={"file": (file.filename, file_content, file.content_type or "text/csv")},
+            timeout=30,
+        )
         response.raise_for_status()
         return response.json()
     except httpx.HTTPStatusError as exc:
@@ -58,8 +67,8 @@ def start_pipeline_v1():
         raise HTTPException(status_code=503, detail=f"ETL service unavailable: {exc}") from exc
 
 
-@app.get("/api/v1/pipeline/status")
-def pipeline_status_v1():
+@app.get("/status")
+def pipeline_status():
     try:
         response = httpx.get(f"{ETL_INTERNAL_URL}/internal/pipeline/status", timeout=10)
         response.raise_for_status()
@@ -73,11 +82,6 @@ def latest_pipeline_run():
     return fetch_one("SELECT * FROM pipeline_runs ORDER BY started_at DESC LIMIT 1")
 
 
-@app.get("/api/v1/pipeline/latest")
-def latest_pipeline_run_v1():
-    return latest_pipeline_run()
-
-
 @app.get("/pipeline/issues", include_in_schema=False)
 def pipeline_issues(limit: int = 20):
     mark = placeholder()
@@ -85,11 +89,6 @@ def pipeline_issues(limit: int = 20):
         f"SELECT stage, severity, code, message, row_number, customer_id, detected_at FROM data_quality_issues ORDER BY detected_at DESC LIMIT {mark}",
         (limit,),
     )
-
-
-@app.get("/api/v1/pipeline/issues")
-def pipeline_issues_v1(limit: int = 20):
-    return pipeline_issues(limit)
 
 
 @app.get("/customers/summary", include_in_schema=False)
@@ -102,11 +101,6 @@ def customer_summary():
         "churn_customers": churn.get("churn_customers", 0),
         "contract_distribution": contract,
     }
-
-
-@app.get("/api/v1/data/customers/summary")
-def customer_summary_v1():
-    return customer_summary()
 
 
 @app.get("/customers/high-risk-sample", include_in_schema=False)
@@ -124,21 +118,10 @@ def high_risk_sample(limit: int = 10):
     )
 
 
-@app.get("/api/v1/data/customers")
-def customers_v1(limit: int = 50):
-    mark = placeholder()
-    return fetch_all(
-        f"""
-        SELECT customer_id, gender, senior_citizen, tenure, contract, internet_service,
-               payment_method, monthly_charges, total_charges, churn
-        FROM telco_customers
-        ORDER BY customer_id
-        LIMIT {mark}
-        """,
-        (limit,),
-    )
-
-
-@app.get("/api/v1/data/customers/high-risk")
-def high_risk_sample_v1(limit: int = 10):
-    return high_risk_sample(limit)
+@app.get("/result")
+def result():
+    return {
+        "latest_run": latest_pipeline_run(),
+        "summary": customer_summary(),
+        "issues": pipeline_issues(20),
+    }

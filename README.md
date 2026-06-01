@@ -20,13 +20,9 @@ docker compose up
 Endpoints de demo:
 
 - `GET /health`
-- `POST /api/v1/pipeline/start`
-- `GET /api/v1/pipeline/status`
-- `GET /api/v1/pipeline/latest`
-- `GET /api/v1/pipeline/issues`
-- `GET /api/v1/data/customers`
-- `GET /api/v1/data/customers/summary`
-- `GET /api/v1/data/customers/high-risk`
+- `POST /upload`
+- `GET /status`
+- `GET /result`
 
 ## Supabase
 

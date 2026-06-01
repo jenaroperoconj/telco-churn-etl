@@ -2,11 +2,13 @@ import subprocess
 import sys
 import threading
 from datetime import datetime, timezone
+from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 
 
 app = FastAPI(title="Telco Churn ETL Service", version="1.0.0")
+RAW_CSV_PATH = Path("data/raw/telco_customer_churn.csv")
 
 state = {
     "status": "idle",
@@ -78,6 +80,26 @@ def start_pipeline():
     thread = threading.Thread(target=run_pipeline, daemon=True)
     thread.start()
     return {"status": "accepted", "message": "Pipeline execution started"}
+
+
+@app.post("/internal/upload")
+async def upload_csv(file: UploadFile = File(...)):
+    if not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="El archivo debe ser CSV")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="El archivo esta vacio")
+
+    RAW_CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
+    RAW_CSV_PATH.write_bytes(content)
+    start_response = start_pipeline()
+    return {
+        "status": "accepted",
+        "filename": file.filename,
+        "saved_as": str(RAW_CSV_PATH),
+        "etl": start_response,
+    }
 
 
 @app.get("/internal/pipeline/status")
