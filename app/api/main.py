@@ -25,6 +25,15 @@ def fetch_all(sql: str, params: tuple = ()):
         return [dict(row) for row in cursor.fetchall()]
 
 
+def get_etl_status():
+    try:
+        response = httpx.get(f"{ETL_INTERNAL_URL}/internal/pipeline/status", timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except httpx.HTTPError as exc:
+        return {"status": "unavailable", "message": f"ETL service unavailable: {exc}"}
+
+
 @app.get("/", include_in_schema=False)
 def root():
     return {
@@ -69,12 +78,7 @@ async def upload_csv(file: UploadFile = File(...)):
 
 @app.get("/status")
 def pipeline_status():
-    try:
-        response = httpx.get(f"{ETL_INTERNAL_URL}/internal/pipeline/status", timeout=10)
-        response.raise_for_status()
-        return response.json()
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=503, detail=f"ETL service unavailable: {exc}") from exc
+    return get_etl_status()
 
 
 @app.get("/pipeline/latest", include_in_schema=False)
@@ -120,8 +124,19 @@ def high_risk_sample(limit: int = 10):
 
 @app.get("/result")
 def result():
-    return {
-        "latest_run": latest_pipeline_run(),
-        "summary": customer_summary(),
-        "issues": pipeline_issues(20),
-    }
+    etl_status = get_etl_status()
+    try:
+        return {
+            "status": "ok",
+            "etl_status": etl_status,
+            "latest_run": latest_pipeline_run(),
+            "summary": customer_summary(),
+            "issues": pipeline_issues(20),
+        }
+    except Exception as exc:
+        return {
+            "status": "error",
+            "message": "No se pudo consultar el resultado en la base de datos. Revisa DATABASE_URL en Render/Supabase.",
+            "database_error": str(exc),
+            "etl_status": etl_status,
+        }

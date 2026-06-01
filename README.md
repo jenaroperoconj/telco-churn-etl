@@ -20,9 +20,9 @@ docker compose up
 Endpoints de demo:
 
 - `GET /health`
-- `POST /upload`
-- `GET /status`
-- `GET /result`
+- `POST /upload`: sube el CSV, lo envia al ETL y dispara el proceso.
+- `GET /status`: muestra estado, aviso final y logs recientes del ETL.
+- `GET /result`: muestra metricas, resumen e issues cuando la carga a Supabase fue exitosa.
 
 ## Supabase
 

@@ -15,10 +15,19 @@ state = {
     "started_at": None,
     "finished_at": None,
     "return_code": None,
-    "last_stdout": "",
-    "last_stderr": "",
+    "message": "Pipeline not started",
+    "logs": [],
 }
 state_lock = threading.Lock()
+
+
+def append_log(line: str) -> None:
+    text = line.strip()
+    if not text:
+        return
+    with state_lock:
+        state["logs"].append(text)
+        state["logs"] = state["logs"][-80:]
 
 
 def run_pipeline() -> None:
@@ -29,26 +38,34 @@ def run_pipeline() -> None:
                 "started_at": datetime.now(timezone.utc).isoformat(),
                 "finished_at": None,
                 "return_code": None,
-                "last_stdout": "",
-                "last_stderr": "",
+                "message": "Pipeline running",
+                "logs": [],
             }
         )
 
-    result = subprocess.run(
-        [sys.executable, "-m", "app.etl.pipeline"],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    return_code = 1
+    try:
+        process = subprocess.Popen(
+            [sys.executable, "-m", "app.etl.pipeline"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        if process.stdout:
+            for line in process.stdout:
+                append_log(line)
+        return_code = process.wait()
+    except Exception as exc:
+        append_log(f"Pipeline execution error: {exc}")
 
+    final_status = "success" if return_code == 0 else "failed"
     with state_lock:
         state.update(
             {
-                "status": "success" if result.returncode == 0 else "failed",
+                "status": final_status,
                 "finished_at": datetime.now(timezone.utc).isoformat(),
-                "return_code": result.returncode,
-                "last_stdout": result.stdout[-4000:],
-                "last_stderr": result.stderr[-4000:],
+                "return_code": return_code,
+                "message": "Pipeline finished successfully" if final_status == "success" else "Pipeline failed; check logs",
             }
         )
 
@@ -98,6 +115,7 @@ async def upload_csv(file: UploadFile = File(...)):
         "status": "accepted",
         "filename": file.filename,
         "saved_as": str(RAW_CSV_PATH),
+        "message": "Archivo recibido; consulta GET /status para ver logs y estado",
         "etl": start_response,
     }
 
