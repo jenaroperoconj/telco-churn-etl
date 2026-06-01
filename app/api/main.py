@@ -25,6 +25,22 @@ def fetch_all(sql: str, params: tuple = ()):
         return [dict(row) for row in cursor.fetchall()]
 
 
+@app.get("/")
+def root():
+    return {
+        "service": "telco-churn-api",
+        "status": "ok",
+        "endpoints": [
+            "/health",
+            "/api/v1/pipeline/start",
+            "/api/v1/pipeline/status",
+            "/api/v1/pipeline/latest",
+            "/api/v1/pipeline/issues",
+            "/api/v1/data/customers/summary",
+        ],
+    }
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}

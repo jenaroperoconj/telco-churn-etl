@@ -56,6 +56,19 @@ def health():
     return {"status": "ok", "service": "etl"}
 
 
+@app.get("/")
+def root():
+    return {
+        "service": "telco-churn-etl",
+        "status": "ok",
+        "endpoints": [
+            "/internal/health",
+            "/internal/pipeline/start",
+            "/internal/pipeline/status",
+        ],
+    }
+
+
 @app.post("/internal/pipeline/start")
 def start_pipeline():
     with state_lock:
