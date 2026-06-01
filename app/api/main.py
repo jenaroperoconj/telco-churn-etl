@@ -25,7 +25,7 @@ def fetch_all(sql: str, params: tuple = ()):
         return [dict(row) for row in cursor.fetchall()]
 
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 def root():
     return {
         "service": "telco-churn-api",
@@ -68,7 +68,7 @@ def pipeline_status_v1():
         raise HTTPException(status_code=503, detail=f"ETL service unavailable: {exc}") from exc
 
 
-@app.get("/pipeline/latest")
+@app.get("/pipeline/latest", include_in_schema=False)
 def latest_pipeline_run():
     return fetch_one("SELECT * FROM pipeline_runs ORDER BY started_at DESC LIMIT 1")
 
@@ -78,7 +78,7 @@ def latest_pipeline_run_v1():
     return latest_pipeline_run()
 
 
-@app.get("/pipeline/issues")
+@app.get("/pipeline/issues", include_in_schema=False)
 def pipeline_issues(limit: int = 20):
     mark = placeholder()
     return fetch_all(
@@ -92,7 +92,7 @@ def pipeline_issues_v1(limit: int = 20):
     return pipeline_issues(limit)
 
 
-@app.get("/customers/summary")
+@app.get("/customers/summary", include_in_schema=False)
 def customer_summary():
     total = fetch_one("SELECT COUNT(*) AS total_customers FROM telco_customers")
     churn = fetch_one("SELECT COUNT(*) AS churn_customers FROM telco_customers WHERE churn = 'Yes'")
@@ -109,7 +109,7 @@ def customer_summary_v1():
     return customer_summary()
 
 
-@app.get("/customers/high-risk-sample")
+@app.get("/customers/high-risk-sample", include_in_schema=False)
 def high_risk_sample(limit: int = 10):
     mark = placeholder()
     return fetch_all(

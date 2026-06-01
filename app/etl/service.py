@@ -56,7 +56,7 @@ def health():
     return {"status": "ok", "service": "etl"}
 
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 def root():
     return {
         "service": "telco-churn-etl",
