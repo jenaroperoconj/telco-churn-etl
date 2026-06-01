@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: telco-churn-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile.api
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ETL_INTERNAL_URL
+        sync: false
+
+  - type: web
+    name: telco-churn-pipeline
+    runtime: docker
+    dockerfilePath: ./Dockerfile.pipeline
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false

@@ -1,0 +1,13 @@
+.git
+.env
+ev2
+ev1
+docs
+diagrams
+*.pdf
+*.docx
+logs
+data/processed
+data/processed/*.db
+__pycache__
+.venv

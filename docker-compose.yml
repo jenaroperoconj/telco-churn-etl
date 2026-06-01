@@ -1,0 +1,27 @@
+services:
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile.pipeline
+    env_file:
+      - .env
+    volumes:
+      - ./data/processed:/app/data/processed
+      - ./logs:/app/logs
+    expose:
+      - "8001"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    env_file:
+      - .env
+    environment:
+      - ETL_INTERNAL_URL=http://pipeline:8001
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/processed:/app/data/processed
+    depends_on:
+      - pipeline

@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+data/processed/*.db
+logs/*.log
+logs/*_evidence.json
+data/processed/
+docs/
+diagrams/
+ev1/
+ev2/
+*.pdf
+*.docx
