@@ -1,3 +1,5 @@
+ALTER TABLE IF EXISTS pipeline_runs DROP COLUMN IF EXISTS churn_rate_pct;
+
 CREATE TABLE IF NOT EXISTS pipeline_runs (
     id BIGSERIAL PRIMARY KEY,
     run_id TEXT UNIQUE NOT NULL,
@@ -6,8 +8,7 @@ CREATE TABLE IF NOT EXISTS pipeline_runs (
     clean_rows INTEGER NOT NULL,
     dropped_rows INTEGER NOT NULL,
     issue_count INTEGER NOT NULL,
-    completeness_pct DOUBLE PRECISION NOT NULL,
-    churn_rate_pct DOUBLE PRECISION NOT NULL
+    completeness_pct DOUBLE PRECISION NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS data_quality_issues (

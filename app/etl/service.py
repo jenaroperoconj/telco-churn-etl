@@ -82,6 +82,7 @@ def root():
         "status": "ok",
         "endpoints": [
             "/internal/health",
+            "/internal/upload",
             "/internal/pipeline/start",
             "/internal/pipeline/status",
         ],
@@ -101,6 +102,10 @@ def start_pipeline():
 
 @app.post("/internal/upload")
 async def upload_csv(file: UploadFile = File(...)):
+    with state_lock:
+        if state["status"] == "running":
+            raise HTTPException(status_code=409, detail="Pipeline already running")
+
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="El archivo debe ser CSV")
 

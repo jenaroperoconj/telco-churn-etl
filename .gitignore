@@ -5,7 +5,12 @@ __pycache__/
 data/processed/*.db
 logs/*.log
 logs/*_evidence.json
-data/processed/
+data/processing/*
+!data/processing/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/failed/*
+!data/failed/.gitkeep
 docs/
 diagrams/
 ev1/

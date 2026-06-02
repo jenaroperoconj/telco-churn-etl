@@ -8,6 +8,8 @@ diagrams
 *.docx
 logs
 data/processed
+data/processing
+data/failed
 data/processed/*.db
 __pycache__
 .venv
